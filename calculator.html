@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator Web Application</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            animation: gradientShift 15s ease infinite;
+            z-index: -2;
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            }
+            50% {
+                background: linear-gradient(135deg, #16213e 0%, #0f3460 50%, #1a1a2e 100%);
+            }
+            100% {
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            }
+        }
+
+        #particlesContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.5;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .calculator {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .display-container {
+            margin-bottom: 30px;
+        }
+
+        .previous-operand {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 20px;
+            min-height: 24px;
+            text-align: right;
+            font-weight: 500;
+        }
+
+        .current-operand {
+            color: #fff;
+            font-size: 32px;
+            font-weight: 600;
+            text-align: right;
+            word-wrap: break-word;
+            word-break: break-all;
+            min-height: 40px;
+        }
+
+        .operation {
+            color: #00d4ff;
+            font-size: 18px;
+            margin-right: 8px;
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .operator-btn {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: rgba(0, 212, 255, 0.5);
+            color: #00d4ff;
+        }
+
+        .operator-btn:hover {
+            background: rgba(0, 212, 255, 0.3);
+        }
+
+        .equals-btn {
+            background: linear-gradient(135deg, rgba(0, 200, 100, 0.4), rgba(0, 255, 150, 0.2));
+            border-color: rgba(0, 255, 150, 0.6);
+            color: #00ff96;
+            grid-column: span 2;
+            font-size: 20px;
+        }
+
+        .equals-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 200, 100, 0.5), rgba(0, 255, 150, 0.3));
+        }
+
+        .clear-btn {
+            background: rgba(255, 100, 100, 0.2);
+            border-color: rgba(255, 100, 100, 0.5);
+            color: #ff6464;
+            grid-column: span 2;
+        }
+
+        .clear-btn:hover {
+            background: rgba(255, 100, 100, 0.3);
+        }
+
+        .delete-btn {
+            background: rgba(255, 150, 100, 0.2);
+            border-color: rgba(255, 150, 100, 0.5);
+            color: #ff9656;
+        }
+
+        .delete-btn:hover {
+            background: rgba(255, 150, 100, 0.3);
+        }
+
+        .history-btn {
+            background: rgba(200, 100, 255, 0.2);
+            border-color: rgba(200, 100, 255, 0.5);
+            color: #d496ff;
+        }
+
+        .history-btn:hover {
+            background: rgba(200, 100, 255, 0.3);
+        }
+
+        .history-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .history-panel.active {
+            display: flex;
+        }
+
+        .history-content {
+            background: #1a1a2e;
+            border: 1px solid rgba(0, 212, 255, 0.5);
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .history-title {
+            color: #00d4ff;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .history-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 3px solid #00d4ff;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(4px);
+        }
+
+        .empty-history {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            padding: 20px 0;
+        }
+
+        .close-history {
+            width: 100%;
+            margin-top: 15px;
+            background: rgba(255, 100, 100, 0.2);
+            color: #ff6464;
+            border-color: rgba(255, 100, 100, 0.5);
+        }
+
+        @media (max-width: 480px) {
+            .calculator {
+                padding: 20px;
+            }
+
+            button {
+                padding: 16px;
+                font-size: 16px;
+            }
+
+            .current-operand {
+                font-size: 28px;
+            }
+
+            .history-content {
+                max-width: 90vw;
+                max-height: 70vh;
+            }
+        }
+
+        .info-text {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div id="particlesContainer"></div>
+    <div class="container">
+        <div class="calculator">
+            <div class="display-container">
+                <div class="previous-operand">
+                    <span id="prevOperand"></span>
+                    <span class="operation" id="operation"></span>
+                </div>
+                <div class="current-operand" id="currentOperand">0</div>
+            </div>
+
+            <div class="buttons-grid">
+                <button class="clear-btn" onclick="calculator.clear()">AC</button>
+                <button class="delete-btn" onclick="calculator.delete()">DEL</button>
+                <button class="history-btn" onclick="calculator.showHistory()">📊</button>
+                <button class="operator-btn" onclick="calculator.chooseOperation('÷')">÷</button>
+
+                <button onclick="calculator.appendNumber('7')">7</button>
+                <button onclick="calculator.appendNumber('8')">8</button>
+                <button onclick="calculator.appendNumber('9')">9</button>
+                <button class="operator-btn" onclick="calculator.chooseOperation('×')">×</button>
+
+                <button onclick="calculator.appendNumber('4')">4</button>
+                <button onclick="calculator.appendNumber('5')">5</button>
+                <button onclick="calculator.appendNumber('6')">6</button>
+                <button class="operator-btn" onclick="calculator.chooseOperation('-')">−</button>
+
+                <button onclick="calculator.appendNumber('1')">1</button>
+                <button onclick="calculator.appendNumber('2')">2</button>
+                <button onclick="calculator.appendNumber('3')">3</button>
+                <button class="operator-btn" onclick="calculator.chooseOperation('+')">+</button>
+
+                <button onclick="calculator.appendNumber('0')">0</button>
+                <button onclick="calculator.appendNumber('.')">.</button>
+                <button class="equals-btn" onclick="calculator.compute()">=</button>
+            </div>
+
+            <div class="info-text">
+                Use keyboard or buttons • Press Enter for equals • Press Backspace for delete
+            </div>
+        </div>
+    </div>
+
+    <div class="history-panel" id="historyPanel">
+        <div class="history-content">
+            <div class="history-title">Calculation History</div>
+            <div id="historyList"></div>
+            <button class="close-history" onclick="calculator.hideHistory()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Particle System
+        class ParticleSystem {
+            constructor() {
+                this.particles = [];
+                this.container = document.getElementById('particlesContainer');
+                this.colors = ['#00d4ff', '#00ff96', '#ff9656', '#d496ff', '#ff6464'];
+                this.init();
+                this.animate();
+                this.addMouseInteraction();
+            }
+
+            init() {
+                for (let i = 0; i < 50; i++) {
+                    this.createParticle();
+                }
+            }
+
+            createParticle() {
+                const particle = {
+                    x: Math.random() * window.innerWidth,
+                    y: Math.random() * window.innerHeight,
+                    size: Math.random() * 3 + 1,
+                    speedX: (Math.random() - 0.5) * 0.5,
+                    speedY: (Math.random() - 0.5) * 0.5,
+                    color: this.colors[Math.floor(Math.random() * this.colors.length)],
+                    element: null,
+                    life: 1,
+                    maxLife: Math.random() * 3 + 2
+                };
+
+                const div = document.createElement('div');
+                div.className = 'particle';
+                div.style.width = particle.size + 'px';
+                div.style.height = particle.size + 'px';
+                div.style.background = particle.color;
+                div.style.boxShadow = `0 0 ${particle.size * 2}px ${particle.color}`;
+                this.container.appendChild(div);
+                particle.element = div;
+
+                this.particles.push(particle);
+            }
+
+            update() {
+                this.particles.forEach((particle, index) => {
+                    particle.x += particle.speedX;
+                    particle.y += particle.speedY;
+                    particle.life -= 1 / (particle.maxLife * 60);
+
+                    if (particle.life <= 0) {
+                        particle.element.remove();
+                        this.particles.splice(index, 1);
+                        this.createParticle();
+                    }
+
+                    if (particle.x < 0) particle.x = window.innerWidth;
+                    if (particle.x > window.innerWidth) particle.x = 0;
+                    if (particle.y < 0) particle.y = window.innerHeight;
+                    if (particle.y > window.innerHeight) particle.y = 0;
+
+                    particle.element.style.left = particle.x + 'px';
+                    particle.element.style.top = particle.y + 'px';
+                    particle.element.style.opacity = particle.life * 0.5;
+                });
+            }
+
+            animate() {
+                this.update();
+                requestAnimationFrame(() => this.animate());
+            }
+
+            addMouseInteraction() {
+                let mouseX = 0;
+                let mouseY = 0;
+                const repelDistance = 100;
+
+                document.addEventListener('mousemove', (e) => {
+                    mouseX = e.clientX;
+                    mouseY = e.clientY;
+
+                    this.particles.forEach(particle => {
+                        const dx = particle.x - mouseX;
+                        const dy = particle.y - mouseY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance < repelDistance) {
+                            const force = (repelDistance - distance) / repelDistance;
+                            const angle = Math.atan2(dy, dx);
+                            particle.speedX += Math.cos(angle) * force * 0.3;
+                            particle.speedY += Math.sin(angle) * force * 0.3;
+                        }
+                    });
+                });
+            }
+        }
+
+        // Initialize particle system
+        const particleSystem = new ParticleSystem();
+
+        class Calculator {
+            constructor(previousOperandElement, currentOperandElement, operationElement) {
+                this.previousOperandElement = previousOperandElement;
+                this.currentOperandElement = currentOperandElement;
+                this.operationElement = operationElement;
+                this.history = JSON.parse(localStorage.getItem('calcHistory')) || [];
+                this.clear();
+            }
+
+            clear() {
+                this.currentOperand = '';
+                this.previousOperand = '';
+                this.operation = undefined;
+                this.updateDisplay();
+            }
+
+            delete() {
+                this.currentOperand = this.currentOperand.toString().slice(0, -1);
+                this.updateDisplay();
+            }
+
+            appendNumber(number) {
+                if (number === '.' && this.currentOperand.includes('.')) return;
+                this.currentOperand = this.currentOperand.toString() + number.toString();
+                this.updateDisplay();
+            }
+
+            chooseOperation(operation) {
+                if (this.currentOperand === '') return;
+                if (this.previousOperand !== '') {
+                    this.compute();
+                }
+                this.operation = operation;
+                this.previousOperand = this.currentOperand;
+                this.currentOperand = '';
+                this.updateDisplay();
+            }
+
+            compute() {
+                let computation;
+                const prev = parseFloat(this.previousOperand);
+                const current = parseFloat(this.currentOperand);
+                if (isNaN(prev) || isNaN(current)) return;
+
+                switch (this.operation) {
+                    case '+':
+                        computation = prev + current;
+                        break;
+                    case '-':
+                        computation = prev - current;
+                        break;
+                    case '×':
+                        computation = prev * current;
+                        break;
+                    case '÷':
+                        if (current === 0) {
+                            alert('Cannot divide by zero');
+                            return;
+                        }
+                        computation = prev / current;
+                        break;
+                    default:
+                        return;
+                }
+
+                const expression = `${prev} ${this.operation} ${current} = ${computation.toFixed(8).replace(/\.?0+$/, '')}`;
+                this.history.unshift(expression);
+                if (this.history.length > 20) this.history.pop();
+                localStorage.setItem('calcHistory', JSON.stringify(this.history));
+
+                this.currentOperand = Math.round(computation * 100000000) / 100000000;
+                this.operation = undefined;
+                this.previousOperand = '';
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                this.currentOperandElement.innerText = this.currentOperand || '0';
+                if (this.operation != null) {
+                    this.previousOperandElement.innerText = `${this.previousOperand} `;
+                    this.operationElement.innerText = this.operation;
+                } else {
+                    this.previousOperandElement.innerText = '';
+                    this.operationElement.innerText = '';
+                }
+            }
+
+            showHistory() {
+                document.getElementById('historyPanel').classList.add('active');
+                const historyList = document.getElementById('historyList');
+                historyList.innerHTML = '';
+                if (this.history.length === 0) {
+                    historyList.innerHTML = '<div class="empty-history">No calculations yet</div>';
+                } else {
+                    this.history.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'history-item';
+                        div.textContent = item;
+                        div.onclick = () => this.loadFromHistory(item);
+                        historyList.appendChild(div);
+                    });
+                }
+            }
+
+            hideHistory() {
+                document.getElementById('historyPanel').classList.remove('active');
+            }
+
+            loadFromHistory(item) {
+                const result = item.split('=')[1].trim();
+                this.currentOperand = result;
+                this.previousOperand = '';
+                this.operation = undefined;
+                this.updateDisplay();
+                this.hideHistory();
+            }
+        }
+
+        const calculator = new Calculator(
+            document.getElementById('prevOperand'),
+            document.getElementById('currentOperand'),
+            document.getElementById('operation')
+        );
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9') calculator.appendNumber(e.key);
+            if (e.key === '.') calculator.appendNumber(e.key);
+            if (e.key === '+' || e.key === '-') calculator.chooseOperation(e.key);
+            if (e.key === '*') calculator.chooseOperation('×');
+            if (e.key === '/') {
+                e.preventDefault();
+                calculator.chooseOperation('÷');
+            }
+            if (e.key === 'Enter' || e.key === '=') {
+                e.preventDefault();
+                calculator.compute();
+            }
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                calculator.delete();
+            }
+            if (e.key === 'Escape') calculator.clear();
+        });
+
+        document.getElementById('historyPanel').addEventListener('click', (e) => {
+            if (e.target.id === 'historyPanel') calculator.hideHistory();
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            // Particles will naturally wrap around due to boundary checks
+        });
+    </script>
+</body>
+</html>
